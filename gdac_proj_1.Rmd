@@ -1,0 +1,139 @@
+---
+title: "bellabeat"
+author: "Folami"
+date: "8/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## FitBit Fitness Tracker Data
+### Data wrangling
+
+The project involves analyzing the usage of smart devices in order to direct market strategy. Data for this exercise was obtained from Kaggle: [FitBit Fitness Tracker.](https://www.kaggle.com/datasets/arashnic/fitbit)
+
+Following the download of the files, libraries were loaded
+```{r Tidyverse}
+#load libraries
+
+library(tidyverse)
+library(janitor)
+
+```
+
+The *dailyActivity_merged* and *sleepday_merged* table were imported using the *readr* package and examined.
+
+```{r Import the tables}
+#import tables and check the tables
+
+daily_activity <- read_csv("dailyActivity_merged.csv")
+glimpse(daily_activity)
+str(daily_activity)
+
+sleep_day <- read_csv("sleepDay_merged.csv")
+head(sleep_day)
+```
+
+The *ActivityDate* variable (2nd column) of the *daily_activity* was then formatted from string  to date ("double").
+
+```{r changes the Activitydate data type and save as date format}
+
+#change the format and convert to date type
+as.Date(daily_activity$ActivityDate, format= "%m/%d/%Y") -> activitydate
+head(activitydate)
+
+# to check the data_type
+typeof(activitydate)
+
+#replace the ActivityDate column with the new date format
+daily_activity$ActivityDate <- activitydate
+head(daily_activity)
+
+```
+
+The *sleepDay* column of the *sleep_day* was also formated
+
+```{r format the SleepDay column}
+sleepday <- as.POSIXct(sleep_day$SleepDay, format= "%m/%d/%Y %H:%M:%S")
+sleep_day$SleepDay <- as.Date(sleepday)
+head(sleep_day)
+```
+
+The distinct number of Id of the four tables where then checked to get an idea of which tables had less than the sampled number of users.
+
+```{r obtain the distinct number of Id present in each table}
+
+n_distinct(daily_activity$Id)
+n_distinct(sleep_day$Id)
+
+```
+
+The tables were then joined using the full join. The tables were joined on the id and date variables of the respective tables. a new table: *merged_dataset* was formed.
+
+```{r joining the tables}
+
+merged_dataset <- full_join(daily_activity, sleep_day, by = c("Id" = "Id", "ActivityDate" = "SleepDay"))
+
+```
+
+After merging the data, further cleaning was done. Id was converted to character data type from number. 
+
+```{r change the Id data_type and remove duplicates}
+#change the Id data_type and remove duplicates.
+
+merged_dataset$Id <- as.character(merged_dataset$Id)
+
+merged_dataset <- distinct(merged_dataset)
+
+```
+
+The column names were cleaned thereafter
+
+```{r cleaning column names}
+
+merged_dataset <- clean_names(merged_dataset)
+merged_dataset <- rename(merged_dataset, "date" = activity_date)
+
+```
+
+then the columns intended for analysis were selected.
+
+```{r select columns for analysis}
+
+merged_dataset <- merged_dataset %>%  select(id : total_distance, very_active_distance : total_time_in_bed)
+
+```
+
+The final table was examined using the following before exploratory visualization was done
+
+```{r}
+#checkout merged_dataset
+View(merged_dataset)
+colnames(merged_dataset)
+str(merged_dataset)
+n_distinct(merged_dataset$id)
+
+```
+
+### Exploratory visualizations
+
+Some graphs were plotted to check for relationships between the different variables
+
+```{r relationship between calories and total_steps}
+
+ggplot(data = merged_dataset) + geom_point(aes(x = total_steps , y = calories, color = id)) + labs(x="Total steps", y = "Calories", title="Calories vs. Total_steps")
+
+```
+
+
+Visual shows a positive correlation between the variables.  
+
+```{r #export table}
+
+write.csv(merged_dataset, "merged_dataset.csv")
+
+```
+The cleaned dataset (*merged_dataset*) is exported, further explored and visualized using a BI tool and to draw further insights from the dataset.
+---
